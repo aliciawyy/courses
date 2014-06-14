@@ -136,8 +136,16 @@ $$
 ---
 ## Comparing childrens' heights and their parents' heights
 
-```{r, dependson="galton",fig.height=4,fig.width=4}
+```{r, dependson="galton",fig.height=5,fig.width=10}
 plot(galton$parent,galton$child,pch=19,col="blue")
+
+freqData <- as.data.frame(table(galton$child, galton$parent))
+names(freqData) <- c("child", "parent", "freq")
+plot(as.numeric(as.vector(freqData$parent)), 
+     as.numeric(as.vector(freqData$child)),
+     pch = 21, col = "black", bg = "lightblue",
+     cex = .15 * freqData$freq, 
+     xlab = "parent", ylab = "child")
 ```
 
 ---

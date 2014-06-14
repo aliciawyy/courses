@@ -1,3 +1,5 @@
+\documentclass{article}
+\begin{document}
 ---
 title       : Historical side note, Regression to Mediocrity
 subtitle    : Regression to the mean
@@ -86,3 +88,5 @@ abline(h = 0); abline(v = 0) # reference lines for no relathionship
 * Multiplication by this correlation shrinks toward 0 (regression toward the mean)
 * If the correlation is 1 there is no regression to the mean (if father's height perfectly determine's child's height and vice versa)
 * Note, regression to the mean has been thought about quite a bit and generalized 
+
+\end{document}
