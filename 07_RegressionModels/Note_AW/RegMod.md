@@ -745,31 +745,24 @@ $$
 Idem for $\hat \beta_0$, then 
 * $\sigma_{\hat \beta_1}^2 = Var(\hat \beta_1) = \sigma^2 / \sum_{i=1}^n (X_i - \bar X)^2$
 * $\sigma_{\hat \beta_0}^2 = Var(\hat \beta_0)  = \left(\frac{1}{n} + \frac{\bar X^2}{\sum_{i=1}^n (X_i - \bar X)^2 }\right)\sigma^2$
-* In practice, $\sigma$ is replaced by its estimate.
-* It's probably not surprising that under iid Gaussian errors
-$$
-\frac{\hat \beta_j - \beta_j}{\hat \sigma_{\hat \beta_j}}
-$$
-follows a $t$ distribution with $n-2$ degrees of freedom and a normal distribution for large $n$.
-* This can be used to create confidence intervals and perform
-hypothesis tests.
 
----
-## Example diamond data set
+In practice, $\sigma$ is replaced by its estimate. It's probably not surprising that under iid Gaussian errors
+$\dfrac{\hat \beta_j - \beta_j}{\hat \sigma_{\hat \beta_j}}$ follows a $t$ distribution with $n-2$ degrees of freedom and a normal distribution for large $n$. This can be used to create confidence intervals and perform hypothesis tests.
+
+### Example `diamond` dataset
 
 ```r
-library(UsingR)
-data(diamond)
 y <- diamond$price
 x <- diamond$carat
 n <- length(y)
 beta1 <- cor(y, x) * sd(y)/sd(x)
 beta0 <- mean(y) - beta1 * mean(x)
-e <- y - beta0 - beta1 * x
+e <- y - beta0 - beta1 * x  # Residual
 sigma <- sqrt(sum(e^2)/(n - 2))
 ssx <- sum((x - mean(x))^2)
-seBeta0 <- (1/n + mean(x)^2/ssx)^0.5 * sigma
-seBeta1 <- sigma/sqrt(ssx)
+seBeta0 <- sqrt(1/n + mean(x)^2/ssx) * sigma  # sigma_beta_0
+seBeta1 <- sigma/sqrt(ssx)  # sigma_beta_1
+
 tBeta0 <- beta0/seBeta0
 tBeta1 <- beta1/seBeta1
 pBeta0 <- 2 * pt(abs(tBeta0), df = n - 2, lower.tail = FALSE)
@@ -781,9 +774,7 @@ rownames(coefTable) <- c("(Intercept)", "x")
 ```
 
 
----
-## Example continued
-
+We can then compare the coefficients obtained by our manual computation and the `lm` function in R
 
 ```r
 coefTable
@@ -807,12 +798,11 @@ summary(fit)$coefficients
 ```
 
 
----
-## Getting a confidence interval
+To get the confidence interval for the coefficients $\hat \beta_0$ and $\hat \beta_1$, we can do
 
 ```r
 sumCoef <- summary(fit)$coefficients
-sumCoef[1, 1] + c(-1, 1) * qt(0.975, df = fit$df) * sumCoef[1, 2]
+sumCoef[1, 1] + c(-1, 1) * qt(0.975, df = fit$df) * sumCoef[1, 2]  # beta_0
 ```
 
 ```
@@ -820,7 +810,7 @@ sumCoef[1, 1] + c(-1, 1) * qt(0.975, df = fit$df) * sumCoef[1, 2]
 ```
 
 ```r
-sumCoef[2, 1] + c(-1, 1) * qt(0.975, df = fit$df) * sumCoef[2, 2]
+sumCoef[2, 1] + c(-1, 1) * qt(0.975, df = fit$df) * sumCoef[2, 2]  # beta_1
 ```
 
 ```
@@ -830,45 +820,48 @@ sumCoef[2, 1] + c(-1, 1) * qt(0.975, df = fit$df) * sumCoef[2, 2]
 With 95% confidence, we estimate that a 0.1 carat increase in
 diamond size results in a 355.6 to 388.6 increase in price in (Singapore) dollars.
 
----
-## Prediction of outcomes
-* Consider predicting $Y$ at a value of $X$
-  * Predicting the price of a diamond given the carat
-  * Predicting the height of a child given the height of the parents
-* The obvious estimate for prediction at point $x_0$ is 
-$$
-\hat \beta_0 + \hat \beta_1 x_0
-$$
+### Confidence and prediction intervals
+Consider predicting $Y$ at a value of $X$, the obvious estimate for prediction at point $x_0$ is $\hat \beta_0 + \hat \beta_1 x_0$
 * A standard error is needed to create a prediction interval.
 * There's a distinction between intervals for the regression
   line at point $x_0$ and the prediction of what a $y$ would be
   at point $x_0$. 
-* Line at $x_0$ se, $\hat \sigma\sqrt{\frac{1}{n} +  \frac{(x_0 - \bar X)^2}{\sum_{i=1}^n (X_i - \bar X)^2}}$
-* Prediction interval se at $x_0$, $\hat \sigma\sqrt{1 + \frac{1}{n} + \frac{(x_0 - \bar X)^2}{\sum_{i=1}^n (X_i - \bar X)^2}}$
+* Line at $x_0$ is $\hat \sigma\sqrt{\frac{1}{n} +  \frac{(x_0 - \bar X)^2}{\sum_{i=1}^n (X_i - \bar X)^2}}$
+* Prediction interval at $x_0$ is $\hat \sigma\sqrt{1 + \frac{1}{n} + \frac{(x_0 - \bar X)^2}{\sum_{i=1}^n (X_i - \bar X)^2}}$
 
----
-## Plotting the prediction intervals
+We can plot the prediction interval as
 
-```
-plot(x, y, frame=FALSE,xlab="Carat",ylab="Dollars",pch=21,col="black", bg="lightblue", cex=2)
+```r
+par(mfrow = c(1, 2))
+plot(x, y, frame = FALSE, xlab = "Carat", ylab = "Dollars", pch = 21, col = "black", 
+    bg = "lightblue", cex = 2)
 abline(fit, lwd = 2)
-xVals <- seq(min(x), max(x), by = .01)
+xVals <- seq(min(x), max(x), by = 0.01)
 yVals <- beta0 + beta1 * xVals
-se1 <- sigma * sqrt(1 / n + (xVals - mean(x))^2/ssx)
-se2 <- sigma * sqrt(1 + 1 / n + (xVals - mean(x))^2/ssx)
+se1 <- sigma * sqrt(1/n + (xVals - mean(x))^2/ssx)
+se2 <- sigma * sqrt(1 + 1/n + (xVals - mean(x))^2/ssx)
 lines(xVals, yVals + 2 * se1)
 lines(xVals, yVals - 2 * se1)
 lines(xVals, yVals + 2 * se2)
 lines(xVals, yVals - 2 * se2)
+
+newdata <- data.frame(x = xVals)
+p1 <- predict(fit, newdata, interval = ("confidence"))
+p2 <- predict(fit, newdata, interval = ("prediction"))
+plot(x, y, frame = FALSE, xlab = "Carat", ylab = "Dollars", pch = 21, col = "black", 
+    bg = "lightblue", cex = 2)
+abline(fit, lwd = 2)
+lines(xVals, p1[, 2])
+lines(xVals, p1[, 3])
+lines(xVals, p2[, 2])
+lines(xVals, p2[, 3])
 ```
 
----
-## Plotting the prediction intervals
-![plot of chunk fig.width==5](figure/fig_width__5.png) 
+![plot of chunk unnamed-chunk-26](figure/unnamed-chunk-26.png) 
 
 
----
-## Discussion
+**Discussion.**
+
 * Both intervals have varying widths.
   * Least width at the mean of the Xs.
 * We are quite confident in the regression line, so that 
@@ -878,26 +871,9 @@ lines(xVals, yVals - 2 * se2)
   in the data around the line.
   * Even if we knew $\beta_0$ and $\beta_1$ this interval would still have width.
 
----
-
-## In R
-```
-newdata <- data.frame(x = xVals)
-p1 <- predict(fit, newdata, interval = ("confidence"))
-p2 <- predict(fit, newdata, interval = ("prediction"))
-plot(x, y, frame=FALSE,xlab="Carat",ylab="Dollars",pch=21,col="black", bg="lightblue", cex=2)
-abline(fit, lwd = 2)
-lines(xVals, p1[,2]); lines(xVals, p1[,3])
-lines(xVals, p2[,2]); lines(xVals, p2[,3])
-```
 
 ---
----
-## In R
-
-![plot of chunk unnamed-chunk-26](figure/unnamed-chunk-26.png) 
-
-
+Next Module : To be continued.
 
 
 
