@@ -2,7 +2,7 @@ Regression Models
 =================
 *This note is a reorganization of Dr. Brian Caffo's lecture notes for the Coursera course [Regression Models](https://class.coursera.org/regmods-002).*
 
-# Module II : Multivariable regression
+# Module II : Multivariable Regression
 
 ## Introduction
 
@@ -146,7 +146,7 @@ sum(ey * ex)/sum(ex^2)
 ```
 
 ```
-## [1] 0.9806
+## [1] 1.024
 ```
 
 ```r
@@ -155,9 +155,9 @@ summary(lm(y ~ x + x2 + x3 - 1))$coefficients  # The -1 removes the intercept te
 
 ```
 ##    Estimate Std. Error t value   Pr(>|t|)
-## x    0.9806   0.009692  101.18 3.761e-100
-## x2   0.9992   0.009378  106.54 2.623e-102
-## x3   1.0047   0.010496   95.72  7.748e-98
+## x    1.0241   0.008932  114.66 2.229e-105
+## x2   0.9983   0.010630   93.92  4.793e-97
+## x3   1.0216   0.010402   98.21  6.561e-99
 ```
 
 Let's show that order doesn't matter
@@ -169,7 +169,7 @@ sum(ey * ex)/sum(ex^2)
 ```
 
 ```
-## [1] 0.9806
+## [1] 1.024
 ```
 
 ```r
@@ -178,7 +178,7 @@ coef(lm(y ~ x + x2 + x3 - 1))  # The -1 removes the intercept term
 
 ```
 ##      x     x2     x3 
-## 0.9806 0.9992 1.0047
+## 1.0241 0.9983 1.0216
 ```
 
 
@@ -191,7 +191,7 @@ sum(ey * ex)/sum(ex^2)
 ```
 
 ```
-## [1] 0.9806
+## [1] 1.024
 ```
 
 ```r
@@ -200,7 +200,7 @@ coef(lm(y ~ x + x2 + x3 - 1))  #the -1 removes the intercept term
 
 ```
 ##      x     x2     x3 
-## 0.9806 0.9992 1.0047
+## 1.0241 0.9983 1.0216
 ```
 
 
@@ -304,8 +304,8 @@ summary(lm(y ~ x1))$coef
 
 ```
 ##             Estimate Std. Error t value  Pr(>|t|)
-## (Intercept)    2.371     0.9992   2.373 1.960e-02
-## x1            94.377     1.7050  55.353 9.643e-76
+## (Intercept)    3.984     0.9558   4.168 6.639e-05
+## x1            92.596     1.6408  56.433 1.535e-76
 ```
 
 ```r
@@ -314,9 +314,9 @@ summary(lm(y ~ x1 + x2))$coef
 
 ```
 ##              Estimate Std. Error  t value   Pr(>|t|)
-## (Intercept)  0.002695  0.0021840    1.234  2.202e-01
-## x1          -1.030394  0.0208038  -49.529  1.137e-70
-## x2           1.000269  0.0002148 4657.258 2.865e-261
+## (Intercept) -0.004099  0.0021123   -1.941  5.519e-02
+## x1          -1.009556  0.0195442  -51.655  2.235e-72
+## x2           1.000147  0.0002057 4860.991 4.503e-263
 ```
 
 
@@ -542,6 +542,534 @@ round(out, 3)
 ```
 
 
+**Some other thoughts on this data.**
+
+* Counts are bounded from below by 0, violates the assumption of normality of the errors. 
+  * Also there are counts near zero, so both the actual assumption and the intent of the assumption are violated.
+* Variance does not appear to be constant.
+* Perhaps taking logs of the counts would help. 
+  * There are 0 counts, so maybe log(Count + 1)
+* Also, we'll cover Poisson GLMs for fitting count data.
+
+---
+## Adjustment
+
+### Simulation 1
+
+```r
+n <- 100
+t <- rep(c(0, 1), c(n/2, n/2))
+x <- c(runif(n/2), runif(n/2))
+beta0 <- 0
+beta1 <- 2
+tau <- 1
+sigma <- 0.2
+y <- beta0 + x * beta1 + t * tau + rnorm(n, sd = sigma)
+plot(x, y, type = "n", frame = FALSE)
+abline(lm(y ~ x), lwd = 2)
+abline(h = mean(y[1:(n/2)]), lwd = 3)
+abline(h = mean(y[(n/2 + 1):n]), lwd = 3)
+fit <- lm(y ~ x + t)
+abline(coef(fit)[1], coef(fit)[2], lwd = 3)
+abline(coef(fit)[1] + coef(fit)[3], coef(fit)[2], lwd = 3)
+points(x[1:(n/2)], y[1:(n/2)], pch = 21, col = "black", bg = "lightblue", cex = 2)
+points(x[(n/2 + 1):n], y[(n/2 + 1):n], pch = 21, col = "black", bg = "salmon", 
+    cex = 2)
+```
+
+![plot of chunk unnamed-chunk-17](figure/unnamed-chunk-17.png) 
+
+
+**Discussion.**
+
+* The X variable is unrelated to group status
+* The X variable is related to Y, but the intercept depends
+  on group status.
+* The group variable is related to Y.
+  * The relationship between group status and Y is constant depending on X.
+  * The relationship between group and Y disregarding X is about the same as holding X constant
+
+### Simulation 2
+
+```r
+n <- 100
+t <- rep(c(0, 1), c(n/2, n/2))
+x <- c(runif(n/2), 1.5 + runif(n/2))
+beta0 <- 0
+beta1 <- 2
+tau <- 0
+sigma <- 0.2
+y <- beta0 + x * beta1 + t * tau + rnorm(n, sd = sigma)
+plot(x, y, type = "n", frame = FALSE)
+abline(lm(y ~ x), lwd = 2)
+abline(h = mean(y[1:(n/2)]), lwd = 3)
+abline(h = mean(y[(n/2 + 1):n]), lwd = 3)
+fit <- lm(y ~ x + t)
+abline(coef(fit)[1], coef(fit)[2], lwd = 3)
+abline(coef(fit)[1] + coef(fit)[3], coef(fit)[2], lwd = 3)
+points(x[1:(n/2)], y[1:(n/2)], pch = 21, col = "black", bg = "lightblue", cex = 2)
+points(x[(n/2 + 1):n], y[(n/2 + 1):n], pch = 21, col = "black", bg = "salmon", 
+    cex = 2)
+```
+
+![plot of chunk unnamed-chunk-18](figure/unnamed-chunk-18.png) 
+
+
+
+**Discussion.**
+
+* The X variable is highly related to group status
+* The X variable is related to Y, the intercept
+  doesn't depend on the group variable.
+  * The X variable remains related to Y holding group status constant
+* The group variable is marginally related to Y disregarding X.
+* The model would estimate no adjusted effect due to group. 
+  * There isn't any data to inform the relationship between
+    group and Y.
+  * This conclusion is entirely based on the model. 
+
+### Simulation 3
+
+```r
+n <- 100
+t <- rep(c(0, 1), c(n/2, n/2))
+x <- c(runif(n/2), 0.9 + runif(n/2))
+beta0 <- 0
+beta1 <- 2
+tau <- -1
+sigma <- 0.2
+y <- beta0 + x * beta1 + t * tau + rnorm(n, sd = sigma)
+plot(x, y, type = "n", frame = FALSE)
+abline(lm(y ~ x), lwd = 2)
+abline(h = mean(y[1:(n/2)]), lwd = 3)
+abline(h = mean(y[(n/2 + 1):n]), lwd = 3)
+fit <- lm(y ~ x + t)
+abline(coef(fit)[1], coef(fit)[2], lwd = 3)
+abline(coef(fit)[1] + coef(fit)[3], coef(fit)[2], lwd = 3)
+points(x[1:(n/2)], y[1:(n/2)], pch = 21, col = "black", bg = "lightblue", cex = 2)
+points(x[(n/2 + 1):n], y[(n/2 + 1):n], pch = 21, col = "black", bg = "salmon", 
+    cex = 2)
+```
+
+![plot of chunk unnamed-chunk-19](figure/unnamed-chunk-19.png) 
+
+
+**Discussion.**
+
+* Marginal association has red group higher than blue.
+* Adjusted relationship has blue group higher than red.
+* Group status related to X.
+* There is some direct evidence for comparing red and blue
+holding X fixed.
+
+### Simulation 4
+
+```r
+n <- 100
+t <- rep(c(0, 1), c(n/2, n/2))
+x <- c(0.5 + runif(n/2), runif(n/2))
+beta0 <- 0
+beta1 <- 2
+tau <- 1
+sigma <- 0.2
+y <- beta0 + x * beta1 + t * tau + rnorm(n, sd = sigma)
+plot(x, y, type = "n", frame = FALSE)
+abline(lm(y ~ x), lwd = 2)
+abline(h = mean(y[1:(n/2)]), lwd = 3)
+abline(h = mean(y[(n/2 + 1):n]), lwd = 3)
+fit <- lm(y ~ x + t)
+abline(coef(fit)[1], coef(fit)[2], lwd = 3)
+abline(coef(fit)[1] + coef(fit)[3], coef(fit)[2], lwd = 3)
+points(x[1:(n/2)], y[1:(n/2)], pch = 21, col = "black", bg = "lightblue", cex = 2)
+points(x[(n/2 + 1):n], y[(n/2 + 1):n], pch = 21, col = "black", bg = "salmon", 
+    cex = 2)
+```
+
+![plot of chunk unnamed-chunk-20](figure/unnamed-chunk-20.png) 
+
+
+**Discussion.**
+
+* No marginal association between group status and Y.
+* Strong adjusted relationship.
+* Group status not related to X.
+* There is lots of direct evidence for comparing red and blue
+holding X fixed.
+
+### Simulation 5
+
+```r
+n <- 100
+t <- rep(c(0, 1), c(n/2, n/2))
+x <- c(runif(n/2, -1, 1), runif(n/2, -1, 1))
+beta0 <- 0
+beta1 <- 2
+tau <- 0
+tau1 <- -4
+sigma <- 0.2
+y <- beta0 + x * beta1 + t * tau + t * x * tau1 + rnorm(n, sd = sigma)
+plot(x, y, type = "n", frame = FALSE)
+abline(lm(y ~ x), lwd = 2)
+abline(h = mean(y[1:(n/2)]), lwd = 3)
+abline(h = mean(y[(n/2 + 1):n]), lwd = 3)
+fit <- lm(y ~ x + t + I(x * t))
+abline(coef(fit)[1], coef(fit)[2], lwd = 3)
+abline(coef(fit)[1] + coef(fit)[3], coef(fit)[2] + coef(fit)[4], lwd = 3)
+points(x[1:(n/2)], y[1:(n/2)], pch = 21, col = "black", bg = "lightblue", cex = 2)
+points(x[(n/2 + 1):n], y[(n/2 + 1):n], pch = 21, col = "black", bg = "salmon", 
+    cex = 2)
+```
+
+![plot of chunk unnamed-chunk-21](figure/unnamed-chunk-21.png) 
+
+
+**Discussion.**
+
+* There is no such thing as a group effect here. 
+  * The impact of group reverses itself depending on X.
+  * Both intercept and slope depends on group.
+* Group status and X unrelated.
+  * There's lots of information about group effects holding X fixed.
+
+### Simulation 6
+![plot of chunk unnamed-chunk-22](figure/unnamed-chunk-22.png) 
+
+
+We will do this to investigate the bivariate relationship
+```
+library(rgl)
+plot3d(x1, x2, y)
+```
+
+**Residual relationship**
+
+```r
+plot(resid(lm(x1 ~ x2)), resid(lm(y ~ x2)), frame = FALSE, col = "black", bg = "lightblue", 
+    pch = 21, cex = 2)
+abline(lm(I(resid(lm(x1 ~ x2))) ~ I(resid(lm(y ~ x2)))), lwd = 2)
+```
+
+![plot of chunk unnamed-chunk-23](figure/unnamed-chunk-23.png) 
+
+
+
+**Discussion.**
+
+* X1 unrelated to X2
+* X2 strongly related to Y
+* Adjusted relationship between X1 and Y largely unchanged
+  by considering X2.
+  * Almost no residual variability after accounting for X2.
+
+### Some final thoughts
+* Modeling multivariate relationships is difficult.
+* Play around with simulations to see how the inclusion or exclustion of another variable can change analyses.
+* The results of these analyses deal with the impact of variables on associations.
+  * Ascertaining mechanisms or cause are difficult subjects to be added on top of difficulty in understanding multivariate associations.
+  
+---
+## Residuals, diagnostics, variation
+
+Consider $Y_i =  \sum_{k=1}^p X_{ik} \beta_j + \epsilon_{i}$. We'll also assume here that $\epsilon_i \stackrel{iid}{\sim} N(0, \sigma^2)$ and define the residuals as $e_i = Y_i -  \hat Y_i =  Y_i - \sum_{k=1}^p X_{ik} \hat \beta_j$
+
+Our estimate of residual variation is $\hat \sigma^2 = \frac{\sum_{i=1}^n e_i^2}{n-p}$, the $n-p$ so that $E[\hat \sigma^2] = \sigma^2$
+
+
+```r
+data(swiss)
+par(mfrow = c(2, 2))
+fit <- lm(Fertility ~ ., data = swiss)
+plot(fit)
+```
+
+![plot of chunk unnamed-chunk-24](figure/unnamed-chunk-24.png) 
+
+
+**Influential, high leverage and outlying points plot**
+
+```r
+n <- 100
+x <- rnorm(n)
+y <- x + rnorm(n, sd = 0.3)
+plot(c(-3, 6), c(-3, 6), type = "n", frame = FALSE, xlab = "X", ylab = "Y")
+abline(lm(y ~ x), lwd = 2)
+points(x, y, cex = 2, bg = "lightblue", col = "black", pch = 21)
+points(0, 0, cex = 2, bg = "darkorange", col = "black", pch = 21)
+points(0, 5, cex = 2, bg = "darkorange", col = "black", pch = 21)
+points(5, 5, cex = 2, bg = "darkorange", col = "black", pch = 21)
+points(5, 0, cex = 2, bg = "darkorange", col = "black", pch = 21)
+```
+
+![plot of chunk unnamed-chunk-25](figure/unnamed-chunk-25.png) 
+
+
+Calling a point an outlier is vague. 
+  * Outliers can be the result of spurious or real processes.
+  * Outliers can have varying degrees of influence.
+  * Outliers can conform to the regression relationship (i.e being marginally outlying in X or Y, but not outlying given the regression relationship).
+* Upper left hand point has low leverage, low influence, outlies in a way not conforming to the regression relationship.
+* Lower left hand point has low leverage, low influence and is not to be an outlier in any sense.
+* Upper right hand point has high leverage, but chooses not to extert it and thus would have low actual influence by conforming to the regresison relationship of the other points.
+* Lower right hand point has high leverage and would exert it if it were included in the fit.
+
+### Influence measures
+Do `?influence.measures` to see the full suite of influence measures in stats. The measures include
+  * `rstandard` - standardized residuals, residuals divided by their standard deviations)
+  * `rstudent` - standardized residuals, residuals divided by their standard deviations, where the ith data point was deleted in the calculation of the standard deviation for the residual to follow a t distribution
+  * `hatvalues` - measures of leverage
+  * `dffits` - change in the predicted response when the $i^{th}$ point is deleted in fitting the model.
+  * `dfbetas` - change in individual coefficients when the $i^{th}$ point is deleted in fitting the model.
+  * `cooks.distance` - overall change in teh coefficients when the $i^{th}$ point is deleted.
+  * `resid` - returns the ordinary residuals
+  * `resid(fit) / (1 - hatvalues(fit))` where `fit` is the linear model fit returns the PRESS residuals, i.e. the leave one out cross validation residuals - the difference in the response and the predicted response at data point $i$, where it was not included in the model fitting.
+
+How to use all of these things?
+
+* Be wary of simplistic rules for diagnostic plots and measures. The use of these tools is context specific. It's better to understand what they are trying to accomplish and use them judiciously.
+* Not all of the measures have meaningful absolute scales. You can look at them relative to the values across the data.
+* They probe your data in different ways to diagnose different problems. 
+* Patterns in your residual plots generally indicate some poor aspect of model fit. These can include:
+  * Heteroskedasticity (non constant variance).
+  * Missing model terms.
+  * Temporal patterns (plot residuals versus collection order).
+* Residual QQ plots investigate normality of the errors.
+* Leverage measures (hat values) can be useful for diagnosing data entry errors.
+* Influence measures get to the bottom line, 'how does deleting or including this point impact a particular aspect of the model'.
+
+### Examples
+**Case 1**
+
+```r
+x <- c(10, rnorm(n))
+y <- c(10, c(rnorm(n)))
+plot(x, y, frame = FALSE, cex = 2, pch = 21, bg = "lightblue", col = "black")
+abline(lm(y ~ x))
+```
+
+![plot of chunk unnamed-chunk-26](figure/unnamed-chunk-26.png) 
+
+
+
+
+```r
+n <- 100
+x <- c(10, rnorm(n))
+y <- c(10, c(rnorm(n)))
+plot(x, y, frame = FALSE, cex = 2, pch = 21, bg = "lightblue", col = "black")
+abline(lm(y ~ x))
+```
+
+![plot of chunk unnamed-chunk-27](figure/unnamed-chunk-27.png) 
+
+We notice that the point `c(10, 10)` has created a strong regression relationship where there shouldn't be one.
+
+---
+## Showing a couple of the diagnostic values
+
+```r
+fit <- lm(y ~ x)
+round(dfbetas(fit)[1:10, 2], 3)
+```
+
+```
+##      1      2      3      4      5      6      7      8      9     10 
+##  5.975  0.064  0.050 -0.036  0.019 -0.076 -0.088 -0.077 -0.002 -0.004
+```
+
+```r
+round(hatvalues(fit)[1:10], 3)
+```
+
+```
+##     1     2     3     4     5     6     7     8     9    10 
+## 0.471 0.011 0.013 0.025 0.021 0.013 0.014 0.014 0.010 0.011
+```
+
+
+**Case 2**
+
+```r
+x <- rnorm(n)
+y <- x + rnorm(n, sd = 0.3)
+x <- c(5, x)
+y <- c(5, y)
+plot(x, y, frame = FALSE, cex = 2, pch = 21, bg = "lightblue", col = "black")
+fit2 <- lm(y ~ x)
+abline(fit2)
+```
+
+![plot of chunk unnamed-chunk-29](figure/unnamed-chunk-29.png) 
+
+
+Look at some of the diagnostics
+
+```r
+round(dfbetas(fit2)[1:10, 2], 3)
+```
+
+```
+##      1      2      3      4      5      6      7      8      9     10 
+##  0.213  0.053  0.007  0.003 -0.071  0.012  0.239 -0.029  0.044 -0.005
+```
+
+```r
+round(hatvalues(fit2)[1:10], 3)
+```
+
+```
+##     1     2     3     4     5     6     7     8     9    10 
+## 0.238 0.014 0.011 0.010 0.012 0.016 0.078 0.031 0.010 0.010
+```
+
+
+**Example described by Stefanski TAS 2007 Vol 61.**
+
+```r
+## Don't everyone hit this server at once.  Read the paper first.
+dat <- read.table("http://www4.stat.ncsu.edu/~stefanski/NSF_Supported/Hidden_Images/orly_owl_files/orly_owl_Lin_4p_5_flat.txt", 
+    header = FALSE)
+pairs(dat)
+```
+
+![plot of chunk unnamed-chunk-31](figure/unnamed-chunk-31.png) 
+
+
+If we got our P-values, should we bother to do a residual plot?
+
+```r
+summary(lm(V1 ~ . - 1, data = dat))$coef
+```
+
+```
+##    Estimate Std. Error t value  Pr(>|t|)
+## V2   0.9856    0.12798   7.701 1.989e-14
+## V3   0.9715    0.12664   7.671 2.500e-14
+## V4   0.8606    0.11958   7.197 8.301e-13
+## V5   0.9267    0.08328  11.127 4.778e-28
+```
+
+
+This is the residual plot, p-values significant, O RLY?
+
+```r
+fit <- lm(V1 ~ . - 1, data = dat)
+plot(predict(fit), resid(fit), pch = ".")
+```
+
+![plot of chunk unnamed-chunk-33](figure/unnamed-chunk-33.png) 
+
+
+---
+## Multivariable Regression
+
+We have an entire class on prediction and machine learning, so we'll focus on modeling. Prediction has a different set of criteria, needs for interpretability and standards for generalizability. In modeling, our interest lies in parsimonious, interpretable representations of the data that enhance our understanding of the phenomena under study.
+
+> A model is a lense through which to look at your data. (Scott Zeger)
+
+Under this philosophy, what's the right model? Whatever model connects the data to a true, parsimonious statement about what you're studying. There are nearly uncontable ways that a model can be wrong, in this lecture, we'll focus on variable inclusion and exclusion. Like nearly all aspects of statistics, good modeling decisions are context dependent. A good model for prediction versus one for studying mechanisms versus one for trying to establish causal effects may not be the same.
+
+> There are known knowns. These are things we know that we know. There are known unknowns. That is to say, there are things that we know we don't know. But there are also unknown unknowns. There are things we don't know we don't know. (Donald Rumsfeld)
+
+In our context
+* (Known knowns) Regressors that we know we should check to include in the model and have.
+* (Known Unknowns) Regressors that we would like to include in the model, but don't have.
+* (Unknown Unknowns) Regressors that we don't even know about that we should have included in the model.
+
+### General Rules for multivariable regression
+* Omitting variables results in bias in the coeficients of interest - unless their regressors are uncorrelated with the omitted ones.
+  * This is why we randomize treatments, it attempts to uncorrelate our treatment indicator with variables that we don't have to put in the model. If there's too many unobserved confounding variables, even randomization won't help you.
+* Including variables that we shouldn't have increases standard errors of the regression variables.
+  * Actually, including any new variables increasese (actual, not estimated) standard errors of other regressors. So we don't want to idly throw variables into the model.
+* The model must tend toward perfect fit as the number of non-redundant regressors approaches $n$.
+* $R^2$ increases monotonically as more regressors are included.
+* The SSE decreases monotonically as more regressors are included.
+
+We could plot of $R^2$ versus $n$. For simulations as the number of variables included equals increases to $n=100$. 
+No actual regression relationship exist in any simulation
+
+```r
+n <- 100
+plot(c(1, n), 0:1, type = "n", frame = FALSE, xlab = "p", ylab = "R^2")
+r <- sapply(1:n, function(p) {
+    y <- rnorm(n)
+    x <- matrix(rnorm(n * p), n, p)
+    summary(lm(y ~ x))$r.squared
+})
+lines(1:n, r, lwd = 2)
+abline(h = 1)
+```
+
+![plot of chunk unnamed-chunk-34](figure/unnamed-chunk-34.png) 
+
+
+### Variance inflation
+
+```r
+n <- 100
+nosim <- 1000
+x1 <- rnorm(n)
+x2 <- rnorm(n)
+x3 <- rnorm(n)
+betas <- sapply(1:nosim, function(i) {
+    y <- x1 + rnorm(n, sd = 0.3)
+    c(coef(lm(y ~ x1))[2], coef(lm(y ~ x1 + x2))[2], coef(lm(y ~ x1 + x2 + x3))[2])
+})
+round(apply(betas, 1, sd), 5)
+```
+
+```
+##      x1      x1      x1 
+## 0.03125 0.03125 0.03121
+```
+
+
+The variance inflation factors include
+* Notice variance inflation was much worse when we included a variable that was highly related to `x1`. 
+* We don't know $\sigma$, so we can only estimate the increase in the actual standard error of the coefficients for including a regressor.
+* However, $\sigma$ drops out of the relative standard errors. If one sequentially adds variables, one can check the variance (or sd) inflation for including each one.
+* When the other regressors are actually orthogonal to the regressor of interest, then there is no variance inflation.
+* The variance inflation factor (VIF) is the increase in the variance for the ith regressor compared to the ideal setting where it is orthogonal to the other regressors.
+  * (The square root of the VIF is the increase in the sd ...)
+* Remember, variance inflation is only part of the picture. We want to include certain variables, even if they dramatically inflate our variance. 
+
+We can reviste our previous simulation
+
+```r
+## doesn't depend on which y you use,
+y <- x1 + rnorm(n, sd = 0.3)
+a <- summary(lm(y ~ x1))$cov.unscaled[2, 2]
+c(summary(lm(y ~ x1 + x2))$cov.unscaled[2, 2], summary(lm(y ~ x1 + x2 + x3))$cov.unscaled[2, 
+    2])/a
+```
+
+```
+## [1] 1.001 1.008
+```
+
+```r
+temp <- apply(betas, 1, var)
+temp[2:3]/temp[1]
+```
+
+```
+##     x1     x1 
+## 1.0000 0.9969
+```
+
+For the `swiss` data
+
+```r
+data(swiss)
+fit1 <- lm(Fertility ~ Agriculture, data = swiss)
+a <- summary(fit1)$cov.unscaled[2, 2]
+fit2 <- update(fit, Fertility ~ Agriculture + Examination, data = swiss)
+fit3 <- update(fit, Fertility ~ Agriculture + Examination + Education, data = swiss)
+c(summary(fit2)$cov.unscaled[2, 2], summary(fit3)$cov.unscaled[2, 2])/a
+```
+
+```
+## [1] 1.892 2.089
+```
 
 
 

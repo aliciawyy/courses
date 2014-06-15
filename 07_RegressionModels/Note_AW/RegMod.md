@@ -873,7 +873,7 @@ lines(xVals, p2[, 3])
 
 
 ---
-Next Module : To be continued.
+Next Module. [Module II : Multivariable Regression](http://rpubs.com/sialy/regmod-mod-2)
 
 
 
