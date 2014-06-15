@@ -23,7 +23,7 @@ logistic regression is a type of GLM where regular multiple regression does not 
 * Linear predictor $\eta_i = \sum_{k=1}^p X_{ik} \beta_k$
 * Link function 
 $g(\mu) = \eta = \log\left( \frac{\mu}{1 - \mu}\right)$
-$g$ is the (natural) log odds, referred to as the **logit**.
+$g$ is the (natural) log odds, referred to as the **logit**. For a probability p, the function $p/(1 − p)$ is called the **odds ratio**.
 * Note then we can invert the logit function as
 $$
 \mu_i = \frac{\exp(\eta_i)}{1 + \exp(\eta_i)} ~~~\mbox{and}~~~
@@ -90,6 +90,481 @@ or the change in the link function of the expected response per unit change in $
 * Asymptotics are used for inference usually. 
 * Many of the ideas from linear models can be brought over to GLMs.
 
+---
+## Logistic Regression
+In this section, we will explore the Baltimore Ravens data. First let's load it and check its structure
+
+```r
+download.file("https://dl.dropboxusercontent.com/u/7710864/data/ravensData.rda", 
+    destfile = "../03_02_binaryOutcomes/data/ravensData.rda", method = "wget")
+load("../03_02_binaryOutcomes/data/ravensData.rda")
+head(ravensData)
+```
+
+```
+##   ravenWinNum ravenWin ravenScore opponentScore
+## 1           1        W         24             9
+## 2           1        W         38            35
+## 3           1        W         28            13
+## 4           1        W         34            31
+## 5           1        W         44            13
+## 6           0        L         23            24
+```
+
+```r
+str(ravensData)
+```
+
+```
+## 'data.frame':	20 obs. of  4 variables:
+##  $ ravenWinNum  : num  1 1 1 1 1 0 1 1 1 1 ...
+##  $ ravenWin     : Factor w/ 2 levels "L","W": 2 2 2 2 2 1 2 2 2 2 ...
+##  $ ravenScore   : num  24 38 28 34 44 23 31 23 9 31 ...
+##  $ opponentScore: num  9 35 13 31 13 24 30 16 6 29 ...
+```
+
+
+### Linear Regression
+The linear regression can be modeled as
+$$ RW_i = b_0 + b_1 RS_i + e_i $$
+Where
+* $RW_i$ - 1 if a Ravens win, 0 if not
+* $RS_i$ - Number of points Ravens scored
+* $b_0$ - probability of a Ravens win if they score 0 points
+* $b_1$ - increase in probability of a Ravens win for each additional point
+* $e_i$ - residual variation due 
+
+
+
+```r
+lmRavens <- lm(ravensData$ravenWinNum ~ ravensData$ravenScore)
+summary(lmRavens)$coef
+```
+
+```
+##                       Estimate Std. Error t value Pr(>|t|)
+## (Intercept)             0.2850   0.256643   1.111  0.28135
+## ravensData$ravenScore   0.0159   0.009059   1.755  0.09625
+```
+
+### Odds
+
+__Binary Outcome 0/1__
+
+$$RW_i$$  
+
+__Probability (0,1)__
+
+$$\rm{Pr}(RW_i | RS_i, b_0, b_1 )$$
+
+
+__Odds $(0,\infty)$__
+$$\frac{\rm{Pr}(RW_i | RS_i, b_0, b_1 )}{1-\rm{Pr}(RW_i | RS_i, b_0, b_1)}$$ 
+
+__Log odds $(-\infty,\infty)$__
+
+$$\log\left(\frac{\rm{Pr}(RW_i | RS_i, b_0, b_1 )}{1-\rm{Pr}(RW_i | RS_i, b_0, b_1)}\right)$$ 
+
+
+### Linear vs. logistic regression
+
+__Linear__
+
+$$ RW_i = b_0 + b_1 RS_i + e_i $$
+
+or
+
+$$ E[RW_i | RS_i, b_0, b_1] = b_0 + b_1 RS_i$$
+
+__Logistic__
+
+$$ \rm{Pr}(RW_i | RS_i, b_0, b_1) = \frac{\exp(b_0 + b_1 RS_i)}{1 + \exp(b_0 + b_1 RS_i)}$$
+
+or
+
+$$ \log\left(\frac{\rm{Pr}(RW_i | RS_i, b_0, b_1 )}{1-\rm{Pr}(RW_i | RS_i, b_0, b_1)}\right) = b_0 + b_1 RS_i $$
+
+### Logistic Regression
+
+$$ \log\left(\frac{\rm{Pr}(RW_i | RS_i, b_0, b_1 )}{1-\rm{Pr}(RW_i | RS_i, b_0, b_1)}\right) = b_0 + b_1 RS_i $$
+
+
+* $b_0$ - Log odds of a Ravens win if they score zero points
+* $b_1$ - Log odds ratio of win probability for each point scored (compared to zero points)
+* $\exp(b_1)$ - **Odds ratio** of win probability for each point scored (compared to zero points)
+
+### Odds
+- Imagine that you are playing a game where you flip a coin with success probability $p$.
+- If it comes up heads, you win $X$. If it comes up tails, you lose $Y$.
+- What should we set $X$ and $Y$ for the game to be fair?
+
+    $$E[earnings]= X p - Y (1 - p) = 0$$
+- Implies
+    $$\frac{Y}{X} = \frac{p}{1 - p}$$    
+- The odds can be said as "How much should you be willing to pay for a $p$ probability of winning a dollar?"
+    - (If $p > 0.5$ you have to pay more if you lose than you get if you win.)
+    - (If $p < 0.5$ you have to pay less if you lose than you get if you win.)
+
+
+```r
+logRegRavens <- glm(ravensData$ravenWinNum ~ ravensData$ravenScore, family = "binomial")
+summary(logRegRavens)
+```
+
+```
+## 
+## Call:
+## glm(formula = ravensData$ravenWinNum ~ ravensData$ravenScore, 
+##     family = "binomial")
+## 
+## Deviance Residuals: 
+##    Min      1Q  Median      3Q     Max  
+## -1.758  -1.100   0.530   0.806   1.495  
+## 
+## Coefficients:
+##                       Estimate Std. Error z value Pr(>|z|)
+## (Intercept)            -1.6800     1.5541   -1.08     0.28
+## ravensData$ravenScore   0.1066     0.0667    1.60     0.11
+## 
+## (Dispersion parameter for binomial family taken to be 1)
+## 
+##     Null deviance: 24.435  on 19  degrees of freedom
+## Residual deviance: 20.895  on 18  degrees of freedom
+## AIC: 24.89
+## 
+## Number of Fisher Scoring iterations: 5
+```
+
+```r
+plot(ravensData$ravenScore, logRegRavens$fitted, pch = 19, col = "blue", xlab = "Score", 
+    ylab = "Prob Ravens Win")
+```
+
+![plot of chunk logReg](figure/logReg.png) 
+
+**Odds ratios and confidence intervals**
+
+
+```r
+exp(logRegRavens$coeff)
+```
+
+```
+##           (Intercept) ravensData$ravenScore 
+##                0.1864                1.1125
+```
+
+```r
+exp(confint(logRegRavens))
+```
+
+```
+## Waiting for profiling to be done...
+```
+
+```
+##                          2.5 % 97.5 %
+## (Intercept)           0.005675  3.106
+## ravensData$ravenScore 0.996230  1.303
+```
+
+
+**ANOVA for logistic regression**
+
+
+```r
+anova(logRegRavens, test = "Chisq")
+```
+
+```
+## Analysis of Deviance Table
+## 
+## Model: binomial, link: logit
+## 
+## Response: ravensData$ravenWinNum
+## 
+## Terms added sequentially (first to last)
+## 
+## 
+##                       Df Deviance Resid. Df Resid. Dev Pr(>Chi)  
+## NULL                                     19       24.4           
+## ravensData$ravenScore  1     3.54        18       20.9     0.06 .
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+```
+
+
+We can interpreting odds ratios
+
+* Not probabilities 
+* Odds ratio of 1 = no difference in odds
+* Log odds ratio of 0 = no difference in odds
+* Odds ratio < 0.5 or > 2 commonly a "moderate effect"
+* Relative risk $\frac{\rm{Pr}(RW_i | RS_i = 10)}{\rm{Pr}(RW_i | RS_i = 0)}$ often easier to interpret, harder to estimate
+* For small probabilities RR $\approx$ OR but __they are not the same__!
+
+---
+## Poisson Regression
+There are many data taking the form of **counts**, such as the number of calls to a call center, the number of flu cases in an area, the number of cars that cross a bridge and etc. The data may also be in the form of **rates**, such as the percentage of children passing a test or the percentage of hits to a website from a country.
+
+In all the above cases, Linear regression with transformation is an option.
+
+First, we recall that the Poisson distribution is a useful model for counts and rates (rate is count per some monitoring time). Some examples uses of the Poisson distribution
+
+* Modeling web traffic hits
+* Incidence rates
+* Approximating binomial probabilities with small $p$ and large $n$
+* Analyzing contigency table data
+
+For the Poisson distribution
+- $X \sim Poisson(t\lambda)$ if
+$$
+P(X = x) = \frac{(t\lambda)^x e^{-t\lambda}}{x!}
+$$
+For $x = 0, 1, \ldots$.
+- The mean of the Poisson is $E[X] = t\lambda$, thus $E[X / t] = \lambda$
+- The variance of the Poisson is $Var(X) = t\lambda$.
+- The Poisson tends to a normal as $t\lambda$ gets large.
+
+
+```r
+par(mfrow = c(1, 3))
+plot(0:10, dpois(0:10, lambda = 2), type = "h", frame = FALSE)
+plot(0:20, dpois(0:20, lambda = 10), type = "h", frame = FALSE)
+plot(0:200, dpois(0:200, lambda = 100), type = "h", frame = FALSE)
+```
+
+![plot of chunk simPois](figure/simPois.png) 
+
+We can show the the mean and variance of a poisson distribution are equal
+
+```r
+x <- 0:10000
+lambda = 3
+mu <- sum(x * dpois(x, lambda = lambda))
+sigmasq <- sum((x - mu)^2 * dpois(x, lambda = lambda))
+c(mu, sigmasq)
+```
+
+```
+## [1] 3 3
+```
+
+
+### Example: Leek Group Website Traffic
+As an example, let's consider the daily counts to [Jeff Leek's website](http://biostat.jhsph.edu/~jleek/), since the unit of time is always one day, set $t = 1$ and then the Poisson mean is interpretted as web hits per day. (If we set $t = 24$, it would be web hits per hour). ([http://skardhamar.github.com/rga/](http://skardhamar.github.com/rga/))
+
+
+```r
+download.file("https://dl.dropboxusercontent.com/u/7710864/data/gaData.rda", 
+    destfile = "../03_03_countOutcomes/data/gaData.rda", method = "wget")
+load("../03_03_countOutcomes/data/gaData.rda")
+gaData$julian <- julian(gaData$date)
+str(gaData)
+```
+
+```
+## 'data.frame':	731 obs. of  4 variables:
+##  $ date       : Date, format: "2011-01-01" "2011-01-02" ...
+##  $ visits     : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ simplystats: num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ julian     : atomic  14975 14976 14977 14978 14979 ...
+##   ..- attr(*, "origin")= Date, format: "1970-01-01"
+```
+
+If we fit the data with a simple linear regression model
+
+$$ NH_i = b_0 + b_1 JD_i + e_i $$
+
+* $NH_i$ - number of hits to the website
+* $JD_i$ - day of the year (Julian day)
+* $b_0$ - number of hits on Julian day 0 (1970-01-01)
+* $b_1$ - increase in number of hits per unit day
+* $e_i$ - variation due to everything we didn't measure
+
+
+We can also plot the Linear regression line
+
+
+```r
+plot(gaData$julian, gaData$visits, pch = 19, col = "darkgrey", xlab = "Julian", 
+    ylab = "Visits")
+lm1 <- lm(gaData$visits ~ gaData$julian)
+abline(lm1, col = "red", lwd = 3)
+```
+
+![plot of chunk linReg](figure/linReg.png) 
+
+
+Aside, Let's take the natural log of the outcome has a specific interpretation. Consider the model
+
+$$ \log(NH_i) = b_0 + b_1 JD_i + e_i $$
+
+* $NH_i$ - number of hits to the website
+* $JD_i$ - day of the year (Julian day)
+* $b_0$ - log number of hits on Julian day 0 (1970-01-01)
+* $b_1$ - increase in log number of hits per unit day
+* $e_i$ - variation due to everything we didn't measure
+
+To exponentiate coefficients
+- $e^{E[\log(Y)]}$ geometric mean of $Y$. 
+    - With no covariates, this is estimated by $e^{\frac{1}{n}\sum_{i=1}^n \log(y_i)} = (\prod_{i=1}^n y_i)^{1/n}$
+- When you take the natural log of outcomes and fit a regression model, your exponentiated coefficients
+estimate things about geometric means.
+- $e^{\beta_0}$ estimated geometric mean hits on day 0
+- $e^{\beta_1}$ estimated relative increase or decrease in geometric mean hits per day
+- There's a problem with logs with you have zero counts, adding a constant works
+
+```r
+round(exp(coef(lm(I(log(gaData$visits + 1)) ~ gaData$julian))), 5)
+```
+
+```
+##   (Intercept) gaData$julian 
+##         0.000         1.002
+```
+
+
+### Linear vs. Poisson regression
+
+__Linear__
+
+$$ NH_i = b_0 + b_1 JD_i + e_i $$
+
+or
+
+$$ E[NH_i | JD_i, b_0, b_1] = b_0 + b_1 JD_i$$
+
+__Poisson/log-linear__
+
+$$ \log\left(E[NH_i | JD_i, b_0, b_1]\right) = b_0 + b_1 JD_i $$
+
+or
+
+$$ E[NH_i | JD_i, b_0, b_1] = \exp\left(b_0 + b_1 JD_i\right) $$
+
+**Multiplicative differences**
+$$ E[NH_i | JD_i, b_0, b_1] = \exp\left(b_0 + b_1 JD_i\right) $$
+$$ E[NH_i | JD_i, b_0, b_1] = \exp\left(b_0 \right)\exp\left(b_1 JD_i\right) $$
+
+If $JD_i$ is increased by one unit, $E[NH_i | JD_i, b_0, b_1]$ is multiplied by $\exp\left(b_1\right)$
+
+
+```r
+par(mfrow = c(1, 2))
+plot(gaData$julian, gaData$visits, pch = 19, col = "darkgrey", xlab = "Julian", 
+    ylab = "Visits")
+glm1 <- glm(gaData$visits ~ gaData$julian, family = "poisson")
+abline(lm1, col = "red", lwd = 3)
+lines(gaData$julian, glm1$fitted, col = "blue", lwd = 3)
+plot(glm1$fitted, glm1$residuals, pch = 19, col = "grey", ylab = "Residuals", 
+    xlab = "Fitted", main = "Mean-variance relationship")
+```
+
+![plot of chunk poisReg](figure/poisReg.png) 
+
+
+### Model agnostic standard errors 
+
+
+```r
+library(sandwich)
+confint.agnostic <- function(object, parm, level = 0.95, ...) {
+    cf <- coef(object)
+    pnames <- names(cf)
+    if (missing(parm)) 
+        parm <- pnames else if (is.numeric(parm)) 
+        parm <- pnames[parm]
+    a <- (1 - level)/2
+    a <- c(a, 1 - a)
+    pct <- stats:::format.perc(a, 3)
+    fac <- qnorm(a)
+    ci <- array(NA, dim = c(length(parm), 2L), dimnames = list(parm, pct))
+    ses <- sqrt(diag(sandwich::vcovHC(object)))[parm]
+    ci[] <- cf[parm] + ses %o% fac
+    ci
+}
+```
+
+[http://stackoverflow.com/questions/3817182/vcovhc-and-confidence-interval](http://stackoverflow.com/questions/3817182/vcovhc-and-confidence-interval)
+
+### Estimating confidence intervals
+
+
+```r
+confint(glm1)
+```
+
+```
+## Waiting for profiling to be done...
+```
+
+```
+##                   2.5 %     97.5 %
+## (Intercept)   -34.34658 -31.159716
+## gaData$julian   0.00219   0.002396
+```
+
+```r
+confint.agnostic(glm1)
+```
+
+```
+##                    2.5 %     97.5 %
+## (Intercept)   -36.362675 -29.136997
+## gaData$julian   0.002058   0.002528
+```
+
+
+### Rates 
+
+$$ E[NHSS_i | JD_i, b_0, b_1]/NH_i = \exp\left(b_0 + b_1 JD_i\right) $$
+$$ \log\left(E[NHSS_i | JD_i, b_0, b_1]\right) - \log(NH_i)  =  b_0 + b_1 JD_i $$
+$$ \log\left(E[NHSS_i | JD_i, b_0, b_1]\right) = \log(NH_i) + b_0 + b_1 JD_i $$
+
+
+
+```r
+par(mfrow = c(1, 2))
+glm2 <- glm(gaData$simplystats ~ julian(gaData$date), offset = log(visits + 
+    1), family = "poisson", data = gaData)
+plot(julian(gaData$date), glm2$fitted, col = "blue", pch = 19, xlab = "Date", 
+    ylab = "Fitted Counts")
+points(julian(gaData$date), glm1$fitted, col = "red", pch = 19)
+
+glm2 <- glm(gaData$simplystats ~ julian(gaData$date), offset = log(visits + 
+    1), family = "poisson", data = gaData)
+plot(julian(gaData$date), gaData$simplystats/(gaData$visits + 1), col = "grey", 
+    xlab = "Date", ylab = "Fitted Rates", pch = 19)
+lines(julian(gaData$date), glm2$fitted/(gaData$visits + 1), col = "blue", lwd = 3)
+```
+
+![plot of chunk ratesFit](figure/ratesFit.png) 
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+---
+## Further resources
+* [Wikipedia on Odds Ratio](http://en.wikipedia.org/wiki/Odds_ratio)
+* [Wikipedia on Logistic Regression](http://en.wikipedia.org/wiki/Logistic_regression)
+* [Logistic regression and glms in R](http://data.princeton.edu/R/glms.html)
+* Brian Caffo's lecture notes on: [Simpson's paradox](http://ocw.jhsph.edu/courses/MethodsInBiostatisticsII/PDFs/lecture23.pdf), [Case-control studies](http://ocw.jhsph.edu/courses/MethodsInBiostatisticsII/PDFs/lecture24.pdf)
+* [Open Intro Chapter on Logistic Regression](http://www.openintro.org/stat/down/oiStat2_08.pdf)
+* [Log-linear models and multiway tables](http://ww2.coastal.edu/kingw/statistics/R-tutorials/loglin.html)
+* [Wikipedia on Poisson regression](http://en.wikipedia.org/wiki/Poisson_regression), [Wikipedia on overdispersion](http://en.wikipedia.org/wiki/Overdispersion)
+* [Regression models for count data in R](http://cran.r-project.org/web/packages/pscl/vignettes/countreg.pdf)
+* [pscl package](http://cran.r-project.org/web/packages/pscl/index.html) - the function _zeroinfl_ fits zero inflated models.
 
 ---
 Previous Module. [Module II : Multivariable Regression](http://rpubs.com/sialy/regmod-mod-2)

@@ -15,7 +15,7 @@ They want to use an enormous amount of data contained in claims to predict a sin
 * Surely there must be consequences to omitting variables that are?
 
 ---
-## General Linear Model
+## Multiple Linear Model
 The general linear model extends SLR by adding terms linearly into the model as
 $$
 Y_i =  \beta_1 X_{1i} + \beta_2 X_{2i} + \ldots +
@@ -724,4 +724,4 @@ fit3 <- update(fit, Fertility ~ Agriculture + Examination + Education, data = sw
 ---
 Previous Module. [Module I : Least Squares and Linear Regression](http://rpubs.com/sialy/regmod-mod-1)
 
-Next Module. To be continued.
+Next Module. [Module III : Generalized Linear Models](http://rpubs.com/sialy/regmod-mod-3)

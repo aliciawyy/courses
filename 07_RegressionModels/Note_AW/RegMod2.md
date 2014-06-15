@@ -15,7 +15,7 @@ They want to use an enormous amount of data contained in claims to predict a sin
 * Surely there must be consequences to omitting variables that are?
 
 ---
-## General Linear Model
+## Multiple Linear Model
 The general linear model extends SLR by adding terms linearly into the model as
 $$
 Y_i =  \beta_1 X_{1i} + \beta_2 X_{2i} + \ldots +
@@ -146,7 +146,7 @@ sum(ey * ex)/sum(ex^2)
 ```
 
 ```
-## [1] 0.998
+## [1] 1.003
 ```
 
 ```r
@@ -155,9 +155,9 @@ summary(lm(y ~ x + x2 + x3 - 1))$coefficients  # The -1 removes the intercept te
 
 ```
 ##    Estimate Std. Error t value   Pr(>|t|)
-## x    0.9980   0.009301   107.3 1.324e-102
-## x2   0.9955   0.008465   117.6 1.934e-106
-## x3   0.9796   0.008982   109.1 2.764e-103
+## x    1.0034   0.009649   104.0 2.701e-101
+## x2   1.0087   0.009992   100.9 4.679e-100
+## x3   0.9859   0.009727   101.4 3.183e-100
 ```
 
 Let's show that order doesn't matter
@@ -169,7 +169,7 @@ sum(ey * ex)/sum(ex^2)
 ```
 
 ```
-## [1] 0.998
+## [1] 1.003
 ```
 
 ```r
@@ -178,7 +178,7 @@ coef(lm(y ~ x + x2 + x3 - 1))  # The -1 removes the intercept term
 
 ```
 ##      x     x2     x3 
-## 0.9980 0.9955 0.9796
+## 1.0034 1.0087 0.9859
 ```
 
 
@@ -191,7 +191,7 @@ sum(ey * ex)/sum(ex^2)
 ```
 
 ```
-## [1] 0.998
+## [1] 1.003
 ```
 
 ```r
@@ -200,7 +200,7 @@ coef(lm(y ~ x + x2 + x3 - 1))  #the -1 removes the intercept term
 
 ```
 ##      x     x2     x3 
-## 0.9980 0.9955 0.9796
+## 1.0034 1.0087 0.9859
 ```
 
 
@@ -304,8 +304,8 @@ summary(lm(y ~ x1))$coef
 
 ```
 ##             Estimate Std. Error t value  Pr(>|t|)
-## (Intercept)    1.663      1.176   1.415 1.604e-01
-## x1            97.097      2.044  47.507 1.809e-69
+## (Intercept)    2.527      1.131   2.235 2.769e-02
+## x1            94.413      1.937  48.740 1.624e-70
 ```
 
 ```r
@@ -313,10 +313,10 @@ summary(lm(y ~ x1 + x2))$coef
 ```
 
 ```
-##              Estimate Std. Error   t value   Pr(>|t|)
-## (Intercept) -0.001711  0.0018666   -0.9169  3.615e-01
-## x1          -1.035762  0.0159070  -65.1134  7.382e-82
-## x2           1.000381  0.0001588 6298.9104 5.458e-274
+##               Estimate Std. Error   t value   Pr(>|t|)
+## (Intercept) -0.0007991  0.0019155   -0.4172  6.775e-01
+## x1          -0.9781867  0.0162410  -60.2296  1.186e-78
+## x2           0.9997786  0.0001669 5990.9776 7.056e-272
 ```
 
 
@@ -873,7 +873,7 @@ round(dfbetas(fit)[1:10, 2], 3)
 
 ```
 ##      1      2      3      4      5      6      7      8      9     10 
-##  7.417 -0.030 -0.172 -0.300 -0.228  0.044  0.022 -0.015  0.010 -0.054
+##  6.496 -0.022  0.100  0.016  0.016 -0.026 -0.124 -0.010  0.016  0.039
 ```
 
 ```r
@@ -882,7 +882,7 @@ round(hatvalues(fit)[1:10], 3)
 
 ```
 ##     1     2     3     4     5     6     7     8     9    10 
-## 0.498 0.012 0.029 0.033 0.024 0.012 0.017 0.010 0.015 0.012
+## 0.479 0.036 0.033 0.010 0.011 0.017 0.046 0.012 0.011 0.012
 ```
 
 
@@ -909,7 +909,7 @@ round(dfbetas(fit2)[1:10, 2], 3)
 
 ```
 ##      1      2      3      4      5      6      7      8      9     10 
-##  0.005  0.139 -0.089  0.041 -0.003  0.086  0.143 -0.066 -0.005 -0.010
+## -0.009 -0.076  0.062  0.127 -0.232  0.003  0.063  0.000  0.011  0.001
 ```
 
 ```r
@@ -918,7 +918,7 @@ round(hatvalues(fit2)[1:10], 3)
 
 ```
 ##     1     2     3     4     5     6     7     8     9    10 
-## 0.199 0.014 0.057 0.037 0.010 0.035 0.016 0.013 0.010 0.010
+## 0.202 0.011 0.039 0.015 0.021 0.013 0.013 0.011 0.010 0.010
 ```
 
 
@@ -1019,7 +1019,7 @@ round(apply(betas, 1, sd), 5)
 
 ```
 ##      x1      x1      x1 
-## 0.03433 0.03444 0.03481
+## 0.02628 0.02661 0.02689
 ```
 
 
@@ -1043,7 +1043,7 @@ c(summary(lm(y ~ x1 + x2))$cov.unscaled[2, 2], summary(lm(y ~ x1 + x2 + x3))$cov
 ```
 
 ```
-## [1] 1.015 1.038
+## [1] 1.017 1.044
 ```
 
 ```r
@@ -1053,7 +1053,7 @@ temp[2:3]/temp[1]
 
 ```
 ##    x1    x1 
-## 1.006 1.028
+## 1.026 1.047
 ```
 
 For the `swiss` data
@@ -1086,4 +1086,4 @@ c(summary(fit2)$cov.unscaled[2, 2], summary(fit3)$cov.unscaled[2, 2])/a
 ---
 Previous Module. [Module I : Least Squares and Linear Regression](http://rpubs.com/sialy/regmod-mod-1)
 
-Next Module. To be continued.
+Next Module. [Module III : Generalized Linear Models](http://rpubs.com/sialy/regmod-mod-3)
