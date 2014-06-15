@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<!-- saved from url=(0014)about:internet -->
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta http-equiv="x-ua-compatible" content="IE=9" >
+
+<title>Regression Models</title>
+
+<style type="text/css">
+body, td {
+   font-family: sans-serif;
+   background-color: white;
+   font-size: 12px;
+   margin: 8px;
+}
+
+tt, code, pre {
+   font-family: 'DejaVu Sans Mono', 'Droid Sans Mono', 'Lucida Console', Consolas, Monaco, monospace;
+}
+
+h1 { 
+   font-size:2.2em; 
+}
+
+h2 { 
+   font-size:1.8em; 
+}
+
+h3 { 
+   font-size:1.4em; 
+}
+
+h4 { 
+   font-size:1.0em; 
+}
+
+h5 { 
+   font-size:0.9em; 
+}
+
+h6 { 
+   font-size:0.8em; 
+}
+
+a:visited {
+   color: rgb(50%, 0%, 50%);
+}
+
+pre {	
+   margin-top: 0;
+   max-width: 95%;
+   border: 1px solid #ccc;
+   white-space: pre-wrap;
+}
+
+pre code {
+   display: block; padding: 0.5em;
+}
+
+code.r, code.cpp {
+   background-color: #F8F8F8;
+}
+
+table, td, th {
+  border: none;
+}
+
+blockquote {
+   color:#666666;
+   margin:0;
+   padding-left: 1em;
+   border-left: 0.5em #EEE solid;
+}
+
+hr {
+   height: 0px;
+   border-bottom: none;
+   border-top-width: thin;
+   border-top-style: dotted;
+   border-top-color: #999999;
+}
+
+@media print {
+   * { 
+      background: transparent !important; 
+      color: black !important; 
+      filter:none !important; 
+      -ms-filter: none !important; 
+   }
+
+   body { 
+      font-size:12pt; 
+      max-width:100%; 
+   }
+       
+   a, a:visited { 
+      text-decoration: underline; 
+   }
+
+   hr { 
+      visibility: hidden;
+      page-break-before: always;
+   }
+
+   pre, blockquote { 
+      padding-right: 1em; 
+      page-break-inside: avoid; 
+   }
+
+   tr, img { 
+      page-break-inside: avoid; 
+   }
+
+   img { 
+      max-width: 100% !important; 
+   }
+
+   @page :left { 
+      margin: 15mm 20mm 15mm 10mm; 
+   }
+     
+   @page :right { 
+      margin: 15mm 10mm 15mm 20mm; 
+   }
+
+   p, h2, h3 { 
+      orphans: 3; widows: 3; 
+   }
+
+   h2, h3 { 
+      page-break-after: avoid; 
+   }
+}
+
+</style>
+
+
+
+<!-- MathJax scripts -->
+<script type="text/javascript" src="https://c328740.ssl.cf1.rackcdn.com/mathjax/2.0-latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+
+
+</head>
+
+<body>
+<h1>Regression Models</h1>
+
+<p><em>This note is a reorganization of Dr. Brian Caffo&#39;s lecture notes for the Coursera course <a href="https://class.coursera.org/regmods-002">Regression Models</a>.</em></p>
+
+<h1>Module III : Generalized Linear Models</h1>
+
+<h2>Introduction</h2>
+
+<p>The Generalized Linear Model (GLM) was introduced in a 1972 RSSB paper by Nelder and Wedderburn. It involves three components</p>
+
+<ul>
+<li>An <em>exponential family</em> model for the response.</li>
+<li>A systematic component via a linear predictor.</li>
+<li>A link function that connects the means of the response to the linear predictor.</li>
+</ul>
+
+<blockquote>
+<p>GLMs can be thought of as a two-stage modeling approach. We first model the response variable using a probability distribution, such as the binomial or Poisson distribution. Second, we model the parameter of the distribution using a collection of prediction and a special form of multi regression. - <a href="http://www.openintro.org">OpenIntro</a></p>
+</blockquote>
+
+<p>Mathematically, first we assume that \( Y_i \sim N(\mu_i, \sigma^2) \) (the Gaussian distribution is an exponential family distribution) and define the linear predictor to be \( \eta_i = \sum_{k=1}^p X_{ik} \beta_k \). The link function is \( g(\mu) = \eta \). </p>
+
+<p>For linear models \( g(\mu) = \mu \) so that \( \mu_i = \eta_i \). This yields the same likelihood model as our additive error Gaussian linear model \( Y_i = \sum_{k=1}^p X_{ik} \beta_k + \epsilon_{i} \) where \( \epsilon_i \stackrel{iid}{\sim} N(0, \sigma^2) \).</p>
+
+<h3>Logistic Regression</h3>
+
+<p>logistic regression is a type of GLM where regular multiple regression does not work well. Assume that \( Y_i \sim Bernoulli(\mu_i) \) so that \( E[Y_i] = \mu_i \) where \( 0\leq \mu_i \leq 1 \).</p>
+
+<ul>
+<li>Linear predictor \( \eta_i = \sum_{k=1}^p X_{ik} \beta_k \)</li>
+<li>Link function 
+\( g(\mu) = \eta = \log\left( \frac{\mu}{1 - \mu}\right) \)
+\( g \) is the (natural) log odds, referred to as the <strong>logit</strong>.</li>
+<li>Note then we can invert the logit function as
+\[ 
+\mu_i = \frac{\exp(\eta_i)}{1 + \exp(\eta_i)} ~~~\mbox{and}~~~
+1 - \mu_i = \frac{1}{1 + \exp(\eta_i)}
+ \]
+Thus the likelihood is
+\[ 
+\prod_{i=1}^n \mu_i^{y_i} (1 - \mu_i)^{1-y_i}
+= \exp\left(\sum_{i=1}^n y_i \eta_i \right)
+\prod_{i=1}^n (1 + \eta_i)^{-1}
+ \]</li>
+</ul>
+
+<h3>Poisson Regression</h3>
+
+<p>Assume that \( Y_i \sim Poisson(\mu_i) \) so that \( E[Y_i] = \mu_i \) where \( 0\leq \mu_i \)</p>
+
+<ul>
+<li>Linear predictor \( \eta_i = \sum_{k=1}^p X_{ik} \beta_k \)</li>
+<li>Link function 
+\( g(\mu) = \eta = \log(\mu) \)</li>
+<li>Recall that \( e^x \) is the inverse of \( \log(x) \) so that 
+\[ 
+\mu_i = e^{\eta_i}
+ \]
+Thus, the likelihood is
+\[ 
+\prod_{i=1}^n (y_i !)^{-1} \mu_i^{y_i}e^{-\mu_i}
+\propto \exp\left(\sum_{i=1}^n y_i \eta_i - \sum_{i=1}^n \mu_i\right)
+ \]</li>
+</ul>
+
+<h3>Summary</h3>
+
+<p>In each case, the only way in which the likelihood depends on the data is through 
+\[ \sum_{i=1}^n y_i \eta_i =
+\sum_{i=1}^n y_i\sum_{k=1}^p X_{ik} \beta_k = 
+\sum_{k=1}^p \beta_k\sum_{i=1}^n X_{ik} y_i
+ \]
+Thus if we don&#39;t need the full data, only \( \sum_{i=1}^n X_{ik} y_i \). This simplification is a consequence of chosing so-called <strong>canonical</strong> link functions.</p>
+
+<p>All models acheive their maximum at the root of the so called normal equations
+\[ 
+0=\sum_{i=1}^n \frac{(Y_i - \mu_i)}{Var(Y_i)}W_i
+ \]
+where \( W_i \) are the derivative of the inverse of the link function.</p>
+
+<p>The variances in the GLMs are</p>
+
+<ul>
+<li>For the linear model \( Var(Y_i) = \sigma^2 \) is constant.</li>
+<li>For Bernoulli case \( Var(Y_i) = \mu_i (1 - \mu_i) \)</li>
+<li>For the Poisson case \( Var(Y_i) = \mu_i \). </li>
+<li>In the latter cases, it is often relevant to have a more flexible variance model, even if it doesn&#39;t correspond to an actual likelihood
+\[ 
+0=\sum_{i=1}^n \frac{(Y_i - \mu_i)}{\phi \mu_i (1 - \mu_i ) } W_i ~~~\mbox{and}~~~
+0=\sum_{i=1}^n \frac{(Y_i - \mu_i)}{\phi \mu_i} W_i
+ \]</li>
+<li>These are called <strong>quasi-likelihood</strong> normal equations </li>
+</ul>
+
+<h3>Odds and ends</h3>
+
+<ul>
+<li>The normal equations have to be solved iteratively. Resulting in \( \hat \beta_k \) and, if included, \( \hat \phi \).</li>
+<li>Predicted linear predictor responses can be obtained as \( \hat \eta = \sum_{k=1}^p X_k \hat \beta_k \)</li>
+<li>Predicted mean responses as \( \hat \mu = g^{-1}(\hat \eta) \)</li>
+<li>Coefficients are interpretted as 
+\[ 
+g(E[Y | X_k = x_k + 1, X_{\sim k} = x_{\sim k}]) - g(E[Y | X_k = x_k, X_{\sim k}=x_{\sim k}]) = \beta_k
+ \]
+or the change in the link function of the expected response per unit change in \( X_k \) holding other regressors constant.</li>
+<li>Variations on Newon/Raphson&#39;s algorithm are used to do it.</li>
+<li>Asymptotics are used for inference usually. </li>
+<li>Many of the ideas from linear models can be brought over to GLMs.</li>
+</ul>
+
+<hr/>
+
+<p>Previous Module. <a href="http://rpubs.com/sialy/regmod-mod-2">Module II : Multivariable Regression</a></p>
+
+</body>
+
+</html>
+
